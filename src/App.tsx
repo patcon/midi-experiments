@@ -17,6 +17,11 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+function midiToNoteName(midi: number): string {
+  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+}
+
 function parseMidi(data: ArrayBuffer): NoteEvent[] {
   const midi = new Midi(data)
   const notes: NoteEvent[] = []
@@ -201,7 +206,7 @@ function App() {
     // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
     const t0 = ac.currentTime + 0.1
     for (const event of allEvents) {
-      instrument.play(event.note, t0 + event.time, {
+      instrument.play(midiToNoteName(event.note), t0 + event.time, {
         gain: event.vol * 0.9,
         duration: event.duration,
       })
