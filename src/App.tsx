@@ -77,7 +77,14 @@ function WaveDisplay({ active }: { active: boolean }) {
 }
 
 function App() {
-  const [tracks, setTracks] = useState<Track[]>([])
+  const [tracks, setTracks] = useState<Track[]>(() => {
+    try {
+      const saved = localStorage.getItem('bk-crossfader-tracks')
+      return saved ? (JSON.parse(saved) as Track[]) : []
+    } catch {
+      return []
+    }
+  })
   const [assignments, setAssignments] = useState<Map<string, DeckId>>(new Map())
   const [faderValue, setFaderValue] = useState(50)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -107,6 +114,14 @@ function App() {
       }
     }
   }, [canPlay, deckATrack, deckBTrack, isPlaying, tracks.length])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('bk-crossfader-tracks', JSON.stringify(tracks))
+    } catch (err) {
+      console.warn('Failed to save tracks to localStorage:', err)
+    }
+  }, [tracks])
 
   const volAPercent = Math.round(faderValue)
   const volBPercent = 100 - Math.round(faderValue)
