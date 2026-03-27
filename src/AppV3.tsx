@@ -105,9 +105,11 @@ interface PianoRollProps {
   offsetB: number
   isPlaying: boolean
   contextA: Tone.Context | null
+  playheadTime: number
+  onSeek: (t: number) => void
 }
 
-function PianoRoll({ trackA, trackB, offsetB, isPlaying, contextA }: PianoRollProps) {
+function PianoRoll({ trackA, trackB, offsetB, isPlaying, contextA, playheadTime, onSeek }: PianoRollProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
 
@@ -182,10 +184,18 @@ function PianoRoll({ trackA, trackB, offsetB, isPlaying, contextA }: PianoRollPr
     }
   }, [trackA, trackB, offsetB, minNote, maxNote, maxTime])
 
-  // Static redraw when tracks/offset changes
+  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const fraction = (e.clientX - rect.left) / rect.width
+    onSeek(Math.max(0, fraction * maxTime))
+  }, [maxTime, onSeek])
+
+  // Static redraw when tracks/offset/playhead changes
   useEffect(() => {
-    drawFrame(0)
-  }, [drawFrame])
+    if (!isPlaying) drawFrame(playheadTime)
+  }, [drawFrame, isPlaying, playheadTime])
 
   // RAF loop during playback
   useEffect(() => {
@@ -206,7 +216,8 @@ function PianoRoll({ trackA, trackB, offsetB, isPlaying, contextA }: PianoRollPr
       ref={canvasRef}
       width={600}
       height={160}
-      style={{ width: '100%', height: '160px', display: 'block', background: 'var(--dim)', borderRadius: '2px' }}
+      onClick={handleClick}
+      style={{ width: '100%', height: '160px', display: 'block', background: 'var(--dim)', borderRadius: '2px', cursor: 'col-resize' }}
     />
   )
 }
@@ -251,6 +262,7 @@ function AppV3() {
   const [statusError, setStatusError] = useState(false)
   const [currentBpm, setCurrentBpm] = useState<number | null>(null)
   const [offsetB, setOffsetB] = useState(0)
+  const [playheadTime, setPlayheadTime] = useState(0)
   const [activeContextA, setActiveContextA] = useState<Tone.Context | null>(null)
 
   const samplerARef = useRef<Tone.Sampler | null>(null)
@@ -460,8 +472,8 @@ function AppV3() {
 
     setIsPlaying(true)
     setStatus('Playing...')
-    ctxA.transport.start()
-    ctxB.transport.start()
+    ctxA.transport.start('+0', playheadTime)
+    ctxB.transport.start('+0', playheadTime)
     setActiveContextA(ctxA)
 
     endTimerRef.current = setTimeout(() => {
@@ -470,7 +482,7 @@ function AppV3() {
       setStatus('Playback complete')
       setStatusError(false)
     }, (maxTimeSec + 5) * 1000)
-  }, [isPlaying, deckATrack, deckBTrack, faderValue, offsetB, stopPlayback])
+  }, [isPlaying, deckATrack, deckBTrack, faderValue, offsetB, playheadTime, stopPlayback])
 
   const handleStop = useCallback(() => {
     stopPlayback()
@@ -560,6 +572,12 @@ function AppV3() {
             offsetB={offsetB}
             isPlaying={isPlaying}
             contextA={activeContextA}
+            playheadTime={playheadTime}
+            onSeek={(t) => {
+              setPlayheadTime(t)
+              if (contextARef.current) contextARef.current.transport.seconds = t
+              if (contextBRef.current) contextBRef.current.transport.seconds = t
+            }}
           />
 
           <div style={{ marginTop: '1rem' }}>
