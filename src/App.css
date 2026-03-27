@@ -133,6 +133,12 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.track-bpm {
+  font-size: 0.58rem;
+  color: var(--text-dim, #888);
+  white-space: nowrap;
+  padding: 0 0.3rem;
+}
 
 .track-badge {
   font-size: 0.48rem;

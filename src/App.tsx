@@ -12,6 +12,7 @@ interface NoteEvent {
 
 interface Track {
   name: string
+  bpm: number | null
   notes: NoteEvent[]
 }
 
@@ -31,8 +32,9 @@ const SALAMANDER_URLS: Record<string, string> = {
 }
 const SALAMANDER_BASE = 'https://tonejs.github.io/audio/salamander/'
 
-function parseMidi(data: ArrayBuffer): NoteEvent[] {
+function parseMidi(data: ArrayBuffer): { notes: NoteEvent[]; bpm: number | null } {
   const midi = new Midi(data)
+  const bpm = midi.header.tempos.length > 0 ? Math.round(midi.header.tempos[0].bpm) : null
   const notes: NoteEvent[] = []
   for (const track of midi.tracks) {
     for (const note of track.notes) {
@@ -44,7 +46,7 @@ function parseMidi(data: ArrayBuffer): NoteEvent[] {
       })
     }
   }
-  return notes.sort((a, b) => a.time - b.time)
+  return { notes: notes.sort((a, b) => a.time - b.time), bpm }
 }
 
 
@@ -150,11 +152,11 @@ function App() {
       reader.onload = ev => {
         const data = ev.target?.result as ArrayBuffer
         try {
-          const notes = parseMidi(data)
+          const { notes, bpm } = parseMidi(data)
           if (notes.length > 0) {
             setTracks(prev => {
               if (prev.find(t => t.name === file.name)) return prev
-              return [...prev, { name: file.name, notes }]
+              return [...prev, { name: file.name, bpm, notes }]
             })
             setStatusError(false)
           }
@@ -343,6 +345,7 @@ function App() {
                 <div key={track.name} className="track-row">
                   <div className="track-icon">♪</div>
                   <div className="track-name">{track.name}</div>
+                  {track.bpm !== null && <div className="track-bpm">{track.bpm} BPM</div>}
                   {assignment && (
                     <div className={`track-badge badge-${assignment.toLowerCase()}`}>
                       {assignment}
