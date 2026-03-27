@@ -17,9 +17,11 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-function midiToNoteName(midi: number): string {
-  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+// Transpose out-of-range notes by octaves to fit the acoustic piano's sample range (A0–C8)
+function clampToRange(note: number, min = 21, max = 108): number {
+  while (note < min) note += 12
+  while (note > max) note -= 12
+  return note
 }
 
 function parseMidi(data: ArrayBuffer): NoteEvent[] {
@@ -92,19 +94,21 @@ function App() {
 
   const deckATrack = tracks.find(t => assignments.get(t.name) === 'A')
   const deckBTrack = tracks.find(t => assignments.get(t.name) === 'B')
-  const canPlay =
-    !!deckATrack &&
-    deckATrack.notes.length > 0 &&
-    !!deckBTrack &&
-    deckBTrack.notes.length > 0
+  const canPlay = (!!deckATrack || !!deckBTrack)
 
   useEffect(() => {
     if (!isPlaying) {
-      if (canPlay) {
-        setStatus(`Ready: A = ${deckATrack!.name} | B = ${deckBTrack!.name}`)
+      if (deckATrack && deckBTrack) {
+        setStatus(`Ready: A = ${deckATrack.name} | B = ${deckBTrack.name}`)
+        setStatusError(false)
+      } else if (deckATrack) {
+        setStatus(`Ready: A = ${deckATrack.name}`)
+        setStatusError(false)
+      } else if (deckBTrack) {
+        setStatus(`Ready: B = ${deckBTrack.name}`)
         setStatusError(false)
       } else if (tracks.length > 0) {
-        setStatus('Assign one track to A and one to B to begin')
+        setStatus('Assign a track to A or B to begin')
         setStatusError(false)
       }
     }
@@ -149,6 +153,15 @@ function App() {
     e.target.value = ''
   }, [])
 
+  const handleRemove = useCallback((trackName: string) => {
+    setTracks(prev => prev.filter(t => t.name !== trackName))
+    setAssignments(prev => {
+      const next = new Map(prev)
+      next.delete(trackName)
+      return next
+    })
+  }, [])
+
   const handleAssign = useCallback((trackName: string, deck: DeckId) => {
     setAssignments(prev => {
       const next = new Map(prev)
@@ -170,23 +183,27 @@ function App() {
 
   const handlePlay = useCallback(async () => {
     if (isPlaying || instrumentRef.current) return
-    if (!deckATrack || !deckBTrack) return
+    if (!deckATrack && !deckBTrack) return
 
     const volA = faderValue / 100
     const volB = 1 - volA
 
-    const eventsA = deckATrack.notes.map(n => ({
-      note: n.note,
-      time: n.time,
-      duration: n.duration,
-      vol: volA,
-    }))
-    const eventsB = deckBTrack.notes.map(n => ({
-      note: n.note,
-      time: n.time,
-      duration: n.duration,
-      vol: volB,
-    }))
+    const eventsA = deckATrack
+      ? deckATrack.notes.map(n => ({
+          note: clampToRange(n.note),
+          time: n.time,
+          duration: n.duration,
+          vol: deckBTrack ? volA : 1,
+        }))
+      : []
+    const eventsB = deckBTrack
+      ? deckBTrack.notes.map(n => ({
+          note: clampToRange(n.note),
+          time: n.time,
+          duration: n.duration,
+          vol: deckATrack ? volB : 1,
+        }))
+      : []
     const allEvents = [...eventsA, ...eventsB].sort((a, b) => a.time - b.time)
 
     if (allEvents.length === 0) return
@@ -206,7 +223,7 @@ function App() {
     // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
     const t0 = ac.currentTime + 0.1
     for (const event of allEvents) {
-      instrument.play(midiToNoteName(event.note), t0 + event.time, {
+      instrument.play(event.note, t0 + event.time, {
         gain: event.vol * 0.9,
         duration: event.duration,
       })
@@ -310,6 +327,13 @@ function App() {
                     onClick={() => handleAssign(track.name, 'B')}
                   >
                     B
+                  </button>
+                  <button
+                    className="remove-btn"
+                    onClick={() => handleRemove(track.name)}
+                    aria-label="Remove track"
+                  >
+                    ×
                   </button>
                 </div>
               )

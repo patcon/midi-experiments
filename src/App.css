@@ -184,6 +184,23 @@ h1 {
   color: var(--b);
 }
 
+.remove-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0.22rem 0.3rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s;
+}
+
+.remove-btn:hover {
+  color: #e55;
+}
+
 /* Mixer card */
 .mixer {
   padding: 1.8rem 2rem 1.5rem;
