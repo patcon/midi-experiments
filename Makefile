@@ -1,5 +1,8 @@
 prepare-gh: ## Create GitHub repo and enable Pages deployment via Actions
-	@gh repo create --public --source=. --remote=origin --ssh 2>/dev/null || true
+	@gh repo create $(shell basename $(CURDIR)) --public 2>/dev/null || true
+	@git remote get-url origin > /dev/null 2>&1 || \
+		git remote add origin git@github.com:$(shell gh api user --jq .login)/$(shell basename $(CURDIR)).git
+	@git push -u origin main 2>/dev/null || true
 	@gh api --method POST /repos/{owner}/{repo}/pages \
 		-f build_type=workflow > /dev/null 2>&1 \
 	|| gh api --method PUT /repos/{owner}/{repo}/pages \
