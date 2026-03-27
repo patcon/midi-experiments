@@ -18,6 +18,14 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
+// Equal-power (constant-loudness) crossfade — avoids the volume dip in the
+// middle that a linear crossfade produces. fader: 0 = A only, 100 = B only.
+function crossfadeGains(fader: number, hasA: boolean, hasB: boolean): [number, number] {
+  if (!hasA || !hasB) return [1, 1]
+  const t = (fader / 100) * (Math.PI / 2)
+  return [Math.cos(t), Math.sin(t)]
+}
+
 // Salamander Grand Piano samples (used by Tone.js Sampler)
 // Keys are Tone.js note names; values are the actual Salamander filenames
 const SALAMANDER_URLS: Record<string, string> = {
@@ -126,10 +134,9 @@ function App() {
   // Update sampler volumes in real-time as the fader moves during playback
   useEffect(() => {
     if (!isPlaying) return
-    const volA = deckBTrack ? 1 - faderValue / 100 : 1
-    const volB = deckATrack ? faderValue / 100 : 1
-    if (samplerARef.current) samplerARef.current.volume.value = Tone.gainToDb(volA)
-    if (samplerBRef.current) samplerBRef.current.volume.value = Tone.gainToDb(volB)
+    const [volA, volB] = crossfadeGains(faderValue, !!deckATrack, !!deckBTrack)
+    if (samplerARef.current) samplerARef.current.volume.rampTo(Tone.gainToDb(volA), 0.08)
+    if (samplerBRef.current) samplerBRef.current.volume.rampTo(Tone.gainToDb(volB), 0.08)
   }, [faderValue, isPlaying, deckATrack, deckBTrack])
 
   useEffect(() => {
@@ -140,8 +147,9 @@ function App() {
     }
   }, [tracks])
 
-  const volAPercent = 100 - Math.round(faderValue)
-  const volBPercent = Math.round(faderValue)
+  const [volADisplay, volBDisplay] = crossfadeGains(faderValue, !!deckATrack, !!deckBTrack)
+  const volAPercent = Math.round(volADisplay * 100)
+  const volBPercent = Math.round(volBDisplay * 100)
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -216,8 +224,7 @@ function App() {
     // Must be first — AudioContext can only resume inside a user gesture
     await Tone.start()
 
-    const volA = deckBTrack ? 1 - faderValue / 100 : 1
-    const volB = deckATrack ? faderValue / 100 : 1
+    const [volA, volB] = crossfadeGains(faderValue, !!deckATrack, !!deckBTrack)
 
     setStatus('Loading samples...')
     setStatusError(false)
