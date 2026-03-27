@@ -14,9 +14,9 @@ importers:
       react-dom:
         specifier: ^19.2.4
         version: 19.2.4(react@19.2.4)
-      tone:
-        specifier: ^14.7.77
-        version: 14.9.17
+      soundfont-player:
+        specifier: ^0.12.0
+        version: 0.12.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.4
@@ -111,10 +111,6 @@ packages:
     resolution: {integrity: sha512-4GgRzy/+fsBa72/RZVJmGKPmZu9Byn8o4MoLpmNe1m8ZfYnz5emHLQz3U4gLud6Zwl0RZIcgiLD7Uq7ySFuDLA==}
     engines: {node: '>=6.0.0'}
     hasBin: true
-
-  '@babel/runtime@7.29.2':
-    resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/template@7.28.6':
     resolution: {integrity: sha512-YA6Ma2KsCdGb+WC6UpBVFJGXL58MDA6oyONbjyF/+5sBgxY/dwkhLogbMT2GXXyU84/IhRw/2D1Os1B/giz+BQ==}
@@ -410,6 +406,9 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  adsr@1.0.1:
+    resolution: {integrity: sha512-thr9LK4jxApOzBA33IWOA83bXJFbyfbeozpHXyrMQOIhUni198uRxXqDhobW0S/51iokqty2Yz2WbLZbE6tntQ==}
+
   ajv@6.14.0:
     resolution: {integrity: sha512-IWrosm/yrn43eiKqkfkHis7QioDleaXQHdDVPKg0FSwwd/DuvyX79TZnFOnYpB7dcsFAMmtFztZuXPDvSePkFw==}
 
@@ -420,9 +419,9 @@ packages:
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
-  automation-events@7.1.16:
-    resolution: {integrity: sha512-vAAHG8WO+Cx2PfwmWIAxSD51ZYg+zRam52pzOGVAJOqsqQO6oaPM2k4/cdEF7QQ786FYB8Wzbw//qTWCdyGvzA==}
-    engines: {node: '>=18.2.0'}
+  audio-loader@0.5.0:
+    resolution: {integrity: sha512-mEoYRjZhqkBSen/X9i2PNosqvafEsur8bI5MNoPr0wsJu9Nzlul3Yv1elYeMPsXxTxYhXLY8AZlScBvaK4mydg==}
+    deprecated: 'Deprecated: use native fetch() + decodeAudioData() instead. See https://github.com/audiojs/audio-loader#migration'
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -767,6 +766,9 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  midimessage@1.0.5:
+    resolution: {integrity: sha512-MPJ2tDupFOfZB5/PLp8fri1IS4fd9hPj0Bio//FBhWRQ+TsJA7/49CF1aJyraDxa0Jq8zMHAwrwXl2GINvLvgw==}
+
   minimatch@10.2.4:
     resolution: {integrity: sha512-oRjTw/97aTBN0RHbYCdtF1MQfvusSIBQM0IZEgzl6426+8jSC0nF1a/GmnVLpfB9yyr6g6FTqWqiZVbxrtaCIg==}
     engines: {node: 18 || 20 || >=22}
@@ -787,6 +789,12 @@ packages:
 
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
+
+  note-parser@1.1.0:
+    resolution: {integrity: sha512-YTqWQBsRp40EFrEznnkGtmx68gcgOQ8CdoBspqGBA3G1/4mJwIYbDe/vuNpX3oGX2DhP7b1dBgTmj7p3Zr0P1Q==}
+
+  note-parser@2.0.1:
+    resolution: {integrity: sha512-w9o6Fv46y3NsFxeezTZSmftBtUM/ypme6iZWVrTJvvsD5RN+w0XNDePWtfreNrZFL3jSjBFhadPoXb+pJO4UdA==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -849,6 +857,9 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  sample-player@0.5.5:
+    resolution: {integrity: sha512-VQ9pXPJ1m/eTH8QK6OQ8Dn/HSVToNyY9w9vnv+y/yjkJeRm87tJ/gBEm66jItfSLhKe6VG1DfX8+oT+Mg7QUpg==}
+
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
@@ -869,12 +880,12 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
+  soundfont-player@0.12.0:
+    resolution: {integrity: sha512-8BJIsAt7h1PK3thSZDgF6zecgGhYkK74JnZO8WRZi3h34qG6H/DYlnv7cpRvL7Q9C8N6qld4Qwj7nJsX1gYjEA==}
+
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
-
-  standardized-audio-context@25.3.77:
-    resolution: {integrity: sha512-Ki9zNz6pKcC5Pi+QPjPyVsD9GwJIJWgryji0XL9cAJXMGyn+dPOf6Qik1AHei0+UNVcc4BOCa0hWLBzlwqsW/A==}
 
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
@@ -887,9 +898,6 @@ packages:
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
-
-  tone@14.9.17:
-    resolution: {integrity: sha512-+Qb7M4NMua+tb5Z52+MEVmjye0fjJuIFBePx423pqr9E6/lHDqZAG+fUAvo+Ujm48q0s9bVLRAyT1ETJJglNtg==}
 
   ts-api-utils@2.5.0:
     resolution: {integrity: sha512-OJ/ibxhPlqrMM0UiNHJ/0CKQkoKF243/AEmplt3qpRgkW8VG7IfOS41h7V8TjITqdByHzrjcS/2si+y4lIh8NA==}
@@ -1074,8 +1082,6 @@ snapshots:
   '@babel/parser@7.29.2':
     dependencies:
       '@babel/types': 7.29.0
-
-  '@babel/runtime@7.29.2': {}
 
   '@babel/template@7.28.6':
     dependencies:
@@ -1375,6 +1381,8 @@ snapshots:
 
   acorn@8.16.0: {}
 
+  adsr@1.0.1: {}
+
   ajv@6.14.0:
     dependencies:
       fast-deep-equal: 3.1.3
@@ -1388,10 +1396,7 @@ snapshots:
 
   argparse@2.0.1: {}
 
-  automation-events@7.1.16:
-    dependencies:
-      '@babel/runtime': 7.29.2
-      tslib: 2.8.1
+  audio-loader@0.5.0: {}
 
   balanced-match@1.0.2: {}
 
@@ -1690,6 +1695,8 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  midimessage@1.0.5: {}
+
   minimatch@10.2.4:
     dependencies:
       brace-expansion: 5.0.5
@@ -1705,6 +1712,10 @@ snapshots:
   natural-compare@1.4.0: {}
 
   node-releases@2.0.36: {}
+
+  note-parser@1.1.0: {}
+
+  note-parser@2.0.1: {}
 
   optionator@0.9.4:
     dependencies:
@@ -1775,6 +1786,12 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.0.0-rc.12
       '@rolldown/binding-win32-x64-msvc': 1.0.0-rc.12
 
+  sample-player@0.5.5:
+    dependencies:
+      adsr: 1.0.1
+      midimessage: 1.0.5
+      note-parser: 1.1.0
+
   scheduler@0.27.0: {}
 
   semver@6.3.1: {}
@@ -1787,13 +1804,13 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  source-map-js@1.2.1: {}
-
-  standardized-audio-context@25.3.77:
+  soundfont-player@0.12.0:
     dependencies:
-      '@babel/runtime': 7.29.2
-      automation-events: 7.1.16
-      tslib: 2.8.1
+      audio-loader: 0.5.0
+      note-parser: 2.0.1
+      sample-player: 0.5.5
+
+  source-map-js@1.2.1: {}
 
   strip-json-comments@3.1.1: {}
 
@@ -1806,16 +1823,12 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
 
-  tone@14.9.17:
-    dependencies:
-      standardized-audio-context: 25.3.77
-      tslib: 2.8.1
-
   ts-api-utils@2.5.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
 
-  tslib@2.8.1: {}
+  tslib@2.8.1:
+    optional: true
 
   type-check@0.4.0:
     dependencies:

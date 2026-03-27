@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import * as Tone from 'tone'
+import * as Soundfont from 'soundfont-player'
 import './App.css'
 
 interface NoteEvent {
@@ -43,9 +43,6 @@ function parseMidi(data: Uint8Array): NoteEvent[] {
   return notes
 }
 
-function midiToHz(midi: number): number {
-  return 440 * Math.pow(2, (midi - 69) / 12)
-}
 
 function WaveDisplay({ active }: { active: boolean }) {
   const bars = useMemo(
@@ -86,8 +83,9 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [status, setStatus] = useState('Upload two tracks and assign them to begin')
   const [statusError, setStatusError] = useState(false)
-  const synthRef = useRef<Tone.PolySynth | null>(null)
-  const stopRequestedRef = useRef(false)
+  const instrumentRef = useRef<Soundfont.Instrument | null>(null)
+  const acRef = useRef<AudioContext | null>(null)
+  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const deckATrack = tracks.find(t => assignments.get(t.name) === 'A')
@@ -161,7 +159,7 @@ function App() {
   }, [])
 
   const handlePlay = useCallback(async () => {
-    if (isPlaying || synthRef.current) return
+    if (isPlaying || instrumentRef.current) return
     if (!deckATrack || !deckBTrack) return
 
     const volA = faderValue / 100
@@ -170,73 +168,58 @@ function App() {
     const eventsA = deckATrack.notes.map(n => ({
       note: n.note,
       time: (n.start * 1000) / 44100,
-      track: 'A' as const,
       vol: volA,
     }))
     const eventsB = deckBTrack.notes.map(n => ({
       note: n.note,
       time: (n.start * 1000) / 44100,
-      track: 'B' as const,
       vol: volB,
     }))
     const allEvents = [...eventsA, ...eventsB].sort((a, b) => a.time - b.time)
 
     if (allEvents.length === 0) return
 
-    const maxTime = Math.max(...allEvents.map(e => e.time))
+    const maxTimeSec = Math.max(...allEvents.map(e => e.time)) / 1000
 
-    try {
-      await Tone.start()
-    } catch (err) {
-      console.warn('Tone startup:', err)
+    setStatus('Loading soundfont...')
+    const ac = new AudioContext()
+    acRef.current = ac
+
+    const instrument = await Soundfont.instrument(ac, 'acoustic_grand_piano', {
+      format: 'mp3',
+      soundfont: 'MusyngKite',
+    })
+    instrumentRef.current = instrument
+
+    // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
+    const t0 = ac.currentTime + 0.1
+    for (const event of allEvents) {
+      instrument.play(event.note, t0 + event.time / 1000, {
+        gain: event.vol * 0.9,
+        duration: 0.4,
+      })
     }
-
-    synthRef.current = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'sine' },
-      envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.5 },
-    }).toDestination()
 
     setIsPlaying(true)
-    stopRequestedRef.current = false
+    setStatus('Playing...')
 
-    let elapsed = 0
-    for (const event of allEvents) {
-      if (stopRequestedRef.current) break
-      const toneNote = event.note - 12
-      if (toneNote > 0) {
-        const delay = event.time - elapsed
-        if (delay > 0) {
-          await new Promise<void>(resolve => setTimeout(resolve, delay))
-          if (stopRequestedRef.current) break
-          elapsed = event.time
-        }
-        setStatus(`Playing: note ${event.note}...`)
-        try {
-          synthRef.current?.triggerAttackRelease(midiToHz(toneNote), 0.1)
-        } catch (err) {
-          console.warn('Note error:', err)
-        }
-      }
-    }
-
-    if (!stopRequestedRef.current) {
-      const remaining = maxTime - elapsed
-      if (remaining > 0) {
-        await new Promise<void>(resolve => setTimeout(resolve, remaining))
-      }
+    endTimerRef.current = setTimeout(() => {
+      instrumentRef.current?.stop()
+      instrumentRef.current = null
+      acRef.current?.close()
+      acRef.current = null
+      setIsPlaying(false)
       setStatus('Playback complete')
       setStatusError(false)
-    }
-
-    synthRef.current?.dispose()
-    synthRef.current = null
-    setIsPlaying(false)
+    }, (maxTimeSec + 1) * 1000)
   }, [isPlaying, deckATrack, deckBTrack, faderValue])
 
   const handleStop = useCallback(() => {
-    stopRequestedRef.current = true
-    synthRef.current?.dispose()
-    synthRef.current = null
+    if (endTimerRef.current) clearTimeout(endTimerRef.current)
+    instrumentRef.current?.stop()
+    instrumentRef.current = null
+    acRef.current?.close()
+    acRef.current = null
     setIsPlaying(false)
     setStatusError(false)
     setStatus('Playback stopped')
