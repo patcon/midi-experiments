@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import * as Soundfont from 'soundfont-player'
+import { Midi } from '@tonejs/midi'
 import './App.css'
 
 interface NoteEvent {
   note: number
   velocity: number
-  start: number
+  time: number     // absolute time in seconds
+  duration: number // note duration in seconds
 }
 
 interface Track {
@@ -15,32 +17,20 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
-// Preserve the exact MIDI parsing logic from midi-crossfader.html
-function parseMidi(data: Uint8Array): NoteEvent[] {
-  let i = 0
+function parseMidi(data: ArrayBuffer): NoteEvent[] {
+  const midi = new Midi(data)
   const notes: NoteEvent[] = []
-  while (i < data.length) {
-    const b = data[i]
-    const nibLo = b & 0x0f
-    const nibHi = (b & 0xf0) >> 4
-    if (nibHi === 0x09 || (nibLo >= 0 && nibLo <= 15)) {
-      const b1 = data[i + 1]
-      if (b1 !== undefined) {
-        const nib1Hi = (b1 & 0xf0) >> 4
-        if (nib1Hi === 9 || nib1Hi === 8) {
-          const note = data[i + 2]
-          const velocity = data[i + 3]
-          if (note !== undefined && velocity !== undefined) {
-            notes.push({ note, velocity, start: i })
-          }
-          i += 3
-          continue
-        }
-      }
+  for (const track of midi.tracks) {
+    for (const note of track.notes) {
+      notes.push({
+        note: note.midi,
+        velocity: note.velocity,
+        time: note.time,
+        duration: note.duration,
+      })
     }
-    i++
   }
-  return notes
+  return notes.sort((a, b) => a.time - b.time)
 }
 
 
@@ -79,7 +69,7 @@ function WaveDisplay({ active }: { active: boolean }) {
 function App() {
   const [tracks, setTracks] = useState<Track[]>(() => {
     try {
-      const saved = localStorage.getItem('bk-crossfader-tracks')
+      const saved = localStorage.getItem('bk-crossfader-tracks-v2')
       return saved ? (JSON.parse(saved) as Track[]) : []
     } catch {
       return []
@@ -117,7 +107,7 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('bk-crossfader-tracks', JSON.stringify(tracks))
+      localStorage.setItem('bk-crossfader-tracks-v2', JSON.stringify(tracks))
     } catch (err) {
       console.warn('Failed to save tracks to localStorage:', err)
     }
@@ -135,7 +125,7 @@ function App() {
       reader.onload = ev => {
         const data = ev.target?.result as ArrayBuffer
         try {
-          const notes = parseMidi(new Uint8Array(data))
+          const notes = parseMidi(data)
           if (notes.length > 0) {
             setTracks(prev => {
               if (prev.find(t => t.name === file.name)) return prev
@@ -182,19 +172,21 @@ function App() {
 
     const eventsA = deckATrack.notes.map(n => ({
       note: n.note,
-      time: (n.start * 1000) / 44100,
+      time: n.time,
+      duration: n.duration,
       vol: volA,
     }))
     const eventsB = deckBTrack.notes.map(n => ({
       note: n.note,
-      time: (n.start * 1000) / 44100,
+      time: n.time,
+      duration: n.duration,
       vol: volB,
     }))
     const allEvents = [...eventsA, ...eventsB].sort((a, b) => a.time - b.time)
 
     if (allEvents.length === 0) return
 
-    const maxTimeSec = Math.max(...allEvents.map(e => e.time)) / 1000
+    const maxTimeSec = Math.max(...allEvents.map(e => e.time + e.duration))
 
     setStatus('Loading soundfont...')
     const ac = new AudioContext()
@@ -209,9 +201,9 @@ function App() {
     // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
     const t0 = ac.currentTime + 0.1
     for (const event of allEvents) {
-      instrument.play(event.note, t0 + event.time / 1000, {
+      instrument.play(event.note, t0 + event.time, {
         gain: event.vol * 0.9,
-        duration: 0.4,
+        duration: event.duration,
       })
     }
 
