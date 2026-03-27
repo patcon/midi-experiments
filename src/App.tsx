@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import AppV1 from './AppV1'
 import AppV2 from './AppV2'
+import AppV3 from './AppV3'
 
-type Route = 'index' | 'v1' | 'v2'
+type Route = 'index' | 'v1' | 'v2' | 'v3'
 
 function getRoute(): Route {
   const hash = window.location.hash
   if (hash === '#v1') return 'v1'
   if (hash === '#v2') return 'v2'
+  if (hash === '#v3') return 'v3'
   return 'index'
 }
 
@@ -22,6 +24,7 @@ export default function App() {
 
   if (route === 'v1') return <AppV1 />
   if (route === 'v2') return <AppV2 />
+  if (route === 'v3') return <AppV3 />
   return <IndexPage />
 }
 
@@ -36,6 +39,11 @@ function IndexPage() {
       id: 'v2',
       title: 'MIDI Crossfader — BPM Sync',
       desc: 'Independent transports per deck, interpolated BPM during crossfade',
+    },
+    {
+      id: 'v3',
+      title: 'MIDI Crossfader — Alignment',
+      desc: 'Piano roll overlay, manual offset nudge, auto-align via cross-correlation',
     },
   ]
 
