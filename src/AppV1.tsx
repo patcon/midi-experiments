@@ -344,6 +344,10 @@ function AppV1() {
               No tracks yet.
               <br />
               Upload .mid files above to build your library.
+              <br />
+              <a href="https://www.khinsider.com/midi/n64/banjo-kazooie" target="_blank" rel="noreferrer" style={{ fontSize: '0.48rem', color: 'var(--muted)' }}>
+                Banjo-Kazooie MIDIs are great for this — composed to transition between tracks →
+              </a>
             </div>
           ) : (
             tracks.map(track => {
