@@ -122,8 +122,8 @@ function App() {
     }
   }, [tracks])
 
-  const volAPercent = Math.round(faderValue)
-  const volBPercent = 100 - Math.round(faderValue)
+  const volAPercent = 100 - Math.round(faderValue)
+  const volBPercent = Math.round(faderValue)
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -185,8 +185,8 @@ function App() {
     if (isPlaying || instrumentRef.current) return
     if (!deckATrack && !deckBTrack) return
 
-    const volA = faderValue / 100
-    const volB = 1 - volA
+    const volA = 1 - faderValue / 100
+    const volB = faderValue / 100
 
     const eventsA = deckATrack
       ? deckATrack.notes.map(n => ({
