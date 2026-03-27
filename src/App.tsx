@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import * as Soundfont from 'soundfont-player'
+import * as Tone from 'tone'
 import { Midi } from '@tonejs/midi'
 import './App.css'
 
@@ -17,17 +17,18 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-function midiToNoteName(midi: number): string {
-  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+// Salamander Grand Piano samples (used by Tone.js Sampler)
+const SALAMANDER_URLS: Record<string, string> = {
+  A0: 'A0.mp3', C1: 'C1.mp3', Ds1: 'Ds1.mp3', Fs1: 'Fs1.mp3',
+  A1: 'A1.mp3', C2: 'C2.mp3', Ds2: 'Ds2.mp3', Fs2: 'Fs2.mp3',
+  A2: 'A2.mp3', C3: 'C3.mp3', Ds3: 'Ds3.mp3', Fs3: 'Fs3.mp3',
+  A3: 'A3.mp3', C4: 'C4.mp3', Ds4: 'Ds4.mp3', Fs4: 'Fs4.mp3',
+  A4: 'A4.mp3', C5: 'C5.mp3', Ds5: 'Ds5.mp3', Fs5: 'Fs5.mp3',
+  A5: 'A5.mp3', C6: 'C6.mp3', Ds6: 'Ds6.mp3', Fs6: 'Fs6.mp3',
+  A6: 'A6.mp3', C7: 'C7.mp3', Ds7: 'Ds7.mp3', Fs7: 'Fs7.mp3',
+  A7: 'A7.mp3', C8: 'C8.mp3',
 }
-
-// Transpose out-of-range notes by octaves to fit the acoustic piano's sample range (A0–C8)
-function clampToRange(note: number, min = 21, max = 108): number {
-  while (note < min) note += 12
-  while (note > max) note -= 12
-  return note
-}
+const SALAMANDER_BASE = 'https://tonejs.github.io/audio/salamander/'
 
 function parseMidi(data: ArrayBuffer): NoteEvent[] {
   const midi = new Midi(data)
@@ -92,8 +93,8 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [status, setStatus] = useState('Upload two tracks and assign them to begin')
   const [statusError, setStatusError] = useState(false)
-  const instrumentRef = useRef<Soundfont.Instrument | null>(null)
-  const acRef = useRef<AudioContext | null>(null)
+  const samplerARef = useRef<Tone.Sampler | null>(null)
+  const samplerBRef = useRef<Tone.Sampler | null>(null)
   const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -186,78 +187,92 @@ function App() {
     setFaderValue(Number(e.target.value))
   }, [])
 
+  const stopPlayback = useCallback(() => {
+    if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null }
+    Tone.Transport.stop()
+    Tone.Transport.cancel()
+    samplerARef.current?.dispose()
+    samplerARef.current = null
+    samplerBRef.current?.dispose()
+    samplerBRef.current = null
+  }, [])
+
   const handlePlay = useCallback(async () => {
-    if (isPlaying || instrumentRef.current) return
+    if (isPlaying) return
     if (!deckATrack && !deckBTrack) return
 
-    const volA = 1 - faderValue / 100
-    const volB = faderValue / 100
+    const volA = deckBTrack ? 1 - faderValue / 100 : 1
+    const volB = deckATrack ? faderValue / 100 : 1
 
-    const eventsA = deckATrack
-      ? deckATrack.notes.map(n => ({
-          note: clampToRange(n.note),
-          time: n.time,
-          duration: n.duration,
-          vol: deckBTrack ? volA : 1,
-        }))
-      : []
-    const eventsB = deckBTrack
-      ? deckBTrack.notes.map(n => ({
-          note: clampToRange(n.note),
-          time: n.time,
-          duration: n.duration,
-          vol: deckATrack ? volB : 1,
-        }))
-      : []
-    const allEvents = [...eventsA, ...eventsB].sort((a, b) => a.time - b.time)
+    setStatus('Loading samples...')
+    setStatusError(false)
+    await Tone.start()
 
-    if (allEvents.length === 0) return
+    const samplerA = deckATrack
+      ? new Tone.Sampler({ urls: SALAMANDER_URLS, baseUrl: SALAMANDER_BASE }).toDestination()
+      : null
+    const samplerB = deckBTrack
+      ? new Tone.Sampler({ urls: SALAMANDER_URLS, baseUrl: SALAMANDER_BASE }).toDestination()
+      : null
 
-    const maxTimeSec = Math.max(...allEvents.map(e => e.time + e.duration))
+    samplerARef.current = samplerA
+    samplerBRef.current = samplerB
 
-    setStatus('Loading soundfont...')
-    const ac = new AudioContext()
-    acRef.current = ac
+    await Tone.loaded()
 
-    const instrument = await Soundfont.instrument(ac, 'acoustic_grand_piano', {
-      format: 'mp3',
-      soundfont: 'MusyngKite',
-    })
-    instrumentRef.current = instrument
+    if (samplerA) samplerA.volume.value = Tone.gainToDb(volA)
+    if (samplerB) samplerB.volume.value = Tone.gainToDb(volB)
 
-    // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
-    const t0 = ac.currentTime + 0.1
-    for (const event of allEvents) {
-      instrument.play(midiToNoteName(event.note), t0 + event.time, {
-        gain: event.vol * 0.9,
-        duration: event.duration,
-      })
+    // Schedule notes via Transport — callbacks fire one-by-one at the right moment
+    if (deckATrack && samplerA) {
+      for (const n of deckATrack.notes) {
+        Tone.Transport.schedule((time) => {
+          samplerARef.current?.triggerAttackRelease(
+            Tone.Midi(n.note).toNote(),
+            Math.max(n.duration, 0.05),
+            time,
+            n.velocity,
+          )
+        }, n.time)
+      }
     }
+    if (deckBTrack && samplerB) {
+      for (const n of deckBTrack.notes) {
+        Tone.Transport.schedule((time) => {
+          samplerBRef.current?.triggerAttackRelease(
+            Tone.Midi(n.note).toNote(),
+            Math.max(n.duration, 0.05),
+            time,
+            n.velocity,
+          )
+        }, n.time)
+      }
+    }
+
+    const maxTimeSec = Math.max(
+      ...(deckATrack?.notes ?? []).map(n => n.time + n.duration),
+      ...(deckBTrack?.notes ?? []).map(n => n.time + n.duration),
+      0,
+    )
 
     setIsPlaying(true)
     setStatus('Playing...')
+    Tone.Transport.start()
 
     endTimerRef.current = setTimeout(() => {
-      instrumentRef.current?.stop()
-      instrumentRef.current = null
-      acRef.current?.close()
-      acRef.current = null
+      stopPlayback()
       setIsPlaying(false)
       setStatus('Playback complete')
       setStatusError(false)
     }, (maxTimeSec + 1) * 1000)
-  }, [isPlaying, deckATrack, deckBTrack, faderValue])
+  }, [isPlaying, deckATrack, deckBTrack, faderValue, stopPlayback])
 
   const handleStop = useCallback(() => {
-    if (endTimerRef.current) clearTimeout(endTimerRef.current)
-    instrumentRef.current?.stop()
-    instrumentRef.current = null
-    acRef.current?.close()
-    acRef.current = null
+    stopPlayback()
     setIsPlaying(false)
     setStatusError(false)
     setStatus('Playback stopped')
-  }, [])
+  }, [stopPlayback])
 
   const handleCenter = useCallback(() => {
     setFaderValue(50)
