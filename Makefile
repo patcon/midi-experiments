@@ -8,6 +8,7 @@ prepare-gh: ## Create GitHub repo and enable Pages deployment via Actions
 		-f build_type=workflow > /dev/null 2>&1 \
 	|| gh api --method PUT /repos/{owner}/{repo}/pages \
 		-f build_type=workflow > /dev/null
+	@gh repo edit --homepage "https://$(shell gh api user --jq .login).github.io/$(shell basename $(CURDIR))/"
 	@echo "GitHub repo created and Pages enabled via Actions."
 
 # These make tasks allow the default help text to work properly.
