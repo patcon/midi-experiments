@@ -302,8 +302,8 @@ function AppV1() {
   return (
     <>
       <header>
-        <h1>BK Crossfader</h1>
-        <div className="sub">Banjo-Kazooie · MIDI Blend Mixer</div>
+        <h1>MIDI Crossfader</h1>
+        <div className="sub">MIDI Blend Mixer</div>
       </header>
 
       <div className="card">

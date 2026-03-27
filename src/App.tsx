@@ -29,12 +29,12 @@ function IndexPage() {
   const prototypes = [
     {
       id: 'v1',
-      title: 'BK Crossfader',
+      title: 'MIDI Crossfader',
       desc: 'Equal-power crossfade, no BPM sync',
     },
     {
       id: 'v2',
-      title: 'BK Crossfader — BPM Sync',
+      title: 'MIDI Crossfader — BPM Sync',
       desc: 'Independent transports per deck, interpolated BPM during crossfade',
     },
   ]
@@ -43,7 +43,7 @@ function IndexPage() {
     <>
       <header>
         <h1>MIDI Experiments</h1>
-        <div className="sub">Banjo-Kazooie · Prototype Index</div>
+        <div className="sub">Prototype Index</div>
       </header>
       <div className="card" style={{ padding: '0.5rem 0' }}>
         {prototypes.map((p, i) => (
