@@ -17,6 +17,11 @@ interface Track {
 
 type DeckId = 'A' | 'B'
 
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+function midiToNoteName(midi: number): string {
+  return `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`
+}
+
 // Transpose out-of-range notes by octaves to fit the acoustic piano's sample range (A0–C8)
 function clampToRange(note: number, min = 21, max = 108): number {
   while (note < min) note += 12
@@ -223,7 +228,7 @@ function App() {
     // Pre-schedule all notes via Web Audio clock (accurate, no setTimeout drift)
     const t0 = ac.currentTime + 0.1
     for (const event of allEvents) {
-      instrument.play(event.note, t0 + event.time, {
+      instrument.play(midiToNoteName(event.note), t0 + event.time, {
         gain: event.vol * 0.9,
         duration: event.duration,
       })
