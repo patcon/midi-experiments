@@ -121,6 +121,15 @@ function App() {
     }
   }, [canPlay, deckATrack, deckBTrack, isPlaying, tracks.length])
 
+  // Update sampler volumes in real-time as the fader moves during playback
+  useEffect(() => {
+    if (!isPlaying) return
+    const volA = deckBTrack ? 1 - faderValue / 100 : 1
+    const volB = deckATrack ? faderValue / 100 : 1
+    if (samplerARef.current) samplerARef.current.volume.value = Tone.gainToDb(volA)
+    if (samplerBRef.current) samplerBRef.current.volume.value = Tone.gainToDb(volB)
+  }, [faderValue, isPlaying, deckATrack, deckBTrack])
+
   useEffect(() => {
     try {
       localStorage.setItem('bk-crossfader-tracks-v2', JSON.stringify(tracks))
